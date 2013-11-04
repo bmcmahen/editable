@@ -74,7 +74,10 @@ Editable.prototype.enable = function(){
   this.events.bind('keyup', 'onstatechange');
   this.events.bind('click', 'onstatechange');
   this.events.bind('focus', 'onstatechange');
-  this.events.bind('paste', 'onchange');
+  this.events.bind('keydown');
+  this.events.bind('keypress');
+  this.events.bind('paste', 'onpaste');
+  this.events.bind('cut', 'onpaste');
   this.events.bind('input', 'onchange');
   this.emit('enable');
   return this;
@@ -128,8 +131,21 @@ Editable.prototype.selection = function(){
  */
 
 Editable.prototype.undo = function(){
-  var buf = this.history.prev();
-  if (!buf) return this;
+  // If we are undoing for the first time in a sequence of undos
+  // then we need to record the current state, in case we want
+  // to redo our undo. 
+  var buf = this.isFirstUndo
+    ? this.history.vals[this.history.vals.length - 1]
+    : this.history.prev();
+
+  if (!buf) return;
+
+  if (this.isFirstUndo) {
+    this.addToHistory();
+    this.history.i -= 1;
+    this.isFirstUndo = false;
+  }
+
   this.el.innerHTML = buf;
   position(this.el, buf.at);
   this.emit('state');
@@ -198,7 +214,39 @@ Editable.prototype.onstatechange = function(e){
 };
 
 /**
- * Emit `change` and push current `buf` to history.
+ * onkeydown, which is used to detect the delete key for
+ * triggering autosave & history.
+ * @param  {Event} e 
+ * @return {Editable} 
+ */
+
+Editable.prototype.onkeydown = function(e){
+  var key = e.keyCode || e.charCode;
+  if (key === 8 || key === 46) {
+    this.onkeypress();
+  }
+  return this;
+};
+
+/**
+ * onkeypress, push our current state & our cursor
+ * position to history.
+ * @param  {Event} e 
+ * @return {Editable} 
+ * @api private
+ */
+
+Editable.prototype.onkeypress = function(e){
+  if (!this.pushedToHistory){
+    this.addToHistory();
+    this.emit('change');
+    this.pushedToHistory = true;
+  }
+};
+
+/**
+ * Emit `change` and trigger 'save' after a 
+ * set duration.
  *
  * @param {Event} e
  * @return {Editable}
@@ -206,13 +254,38 @@ Editable.prototype.onstatechange = function(e){
  */
 
 Editable.prototype.onchange = function(e){
+  this.emit('change', e);
   var self = this;
   autosave(function(){
-    var buf = new String(self.toString());
-    buf.at = position(el);
-    self.history.add(buf);
-    return self.emit('change', e);
+    self.pushedToHistory = false;
+    self.emit('save');
   });
+  return this;
+};
+
+/**
+ * onpaste event handler
+ * @param  {Event} e 
+ * @return {Editable}   
+ */
+
+Editable.prototype.onpaste = function(e){
+  this.addToHistory();
+  this.emit('change');
+  return this;
+};
+
+/**
+ * Update our history with the current contents, plus
+ * our cursor position.
+ * @return {Editable}
+ */
+
+Editable.prototype.addToHistory = funciton(){
+  var buf = new String(this.toString());
+  buf.at = position(this.el);
+  this.history.add(buf);
+  return this;
 };
 
 /**

@@ -9,7 +9,7 @@
     "content editable sucks"
   ],
   "dependencies": {
-    "component/history": "*",
+    "bmcmahen/history": "*",
     "component/emitter": "*",
     "component/events": "*",
     "bmcmahen/auto-save": "*"
