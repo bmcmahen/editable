@@ -62,7 +62,6 @@
         , Editable = require('editable')
         , el = document.querySelector('#editable')
         , editable = new Editable(el)
-        , k = require('k')(el)
         , n = 0;
 
 
@@ -137,16 +136,16 @@
       // bind shortcuts
 
       function shortcuts(){
-        k('command + z, ctrl + z', prevent);
-        k('command + y, ctrl + y', prevent);
-        k('command + z, ctrl + z', editable.undo.bind(editable));
-        k('command + y, ctrl + y', editable.redo.bind(editable));
-        k('command + b, ctrl + b', execute('bold'));
-        k('command + i, ctrl + i', execute('italic'));
-        k('command + u, ctrl + u', execute('underline'));
-        k('command + l, ctrl + l', execute('insertUnorderedList'));
-        k('command + s, ctrl + s', execute('strikethrough'));
-        k('command + j, ctrl + j', toggleJustify);
+        // k('command + z, ctrl + z', prevent);
+        // k('command + y, ctrl + y', prevent);
+        // k('command + z, ctrl + z', editable.undo.bind(editable));
+        // k('command + y, ctrl + y', editable.redo.bind(editable));
+        // k('command + b, ctrl + b', execute('bold'));
+        // k('command + i, ctrl + i', execute('italic'));
+        // k('command + u, ctrl + u', execute('underline'));
+        // k('command + l, ctrl + l', execute('insertUnorderedList'));
+        // k('command + s, ctrl + s', execute('strikethrough'));
+        // k('command + j, ctrl + j', toggleJustify);
       }
 
       // toggleJustify

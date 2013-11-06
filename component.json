@@ -12,7 +12,8 @@
     "bmcmahen/history": "*",
     "component/emitter": "*",
     "component/events": "*",
-    "bmcmahen/auto-save": "*"
+    "bmcmahen/auto-save": "*",
+    "bmcmahen/selection-range": "*"
   },
   "development": {
     "yields/k": "*"
