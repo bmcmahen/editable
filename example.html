@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+</head>
+<body>
+
+<p id='editable'></p>
+
+<script src='build/build.js'></script>
+
+<script>
+
+var editable = require('editable');
+var el = document.getElementById('editable');
+
+var editor = editable(el)
+  .addPlaceholder('Type here.')
+  .monitorSelections()
+  .monitorCursor()
+  .enable();
+
+editor.on('selected', function(sel){
+  console.log('selection');
+});
+
+editor.on('deselected', function(sel){
+  console.log('deselected');
+});
+
+editor.on('cursormove', function(cur){
+  console.log("cursor move", cur);
+});
+
+editor.on('change', function(){
+  console.log('change!')
+});
+
+editor.on('save', function(){
+  console.log('save!');
+});
+
+editor.on('paste', function(){
+  console.log('paste!');
+});
+
+editor.on('cut', function(){
+  console.log('cut!');
+});
+
+</script>
+</body>
+</html>

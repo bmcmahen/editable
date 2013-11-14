@@ -70,14 +70,12 @@ Editable.prototype.monitorSelections = function(){
   var select = selected(this.el);
   var self = this;
   var currentSelection; 
-  select.on('select', function(sel){
+  select.on('selected', function(sel){
     currentSelection = sel;
-    self.isSelected = true;
-    self.emit('select', sel);
+    self.emit('selected', sel);
   });
-  select.on('deselect', function(){
-    self.isSelected = false;
-    self.emit('deselect', currentSelection);
+  select.on('deselected', function(){
+    self.emit('deselected', currentSelection);
   });
   return this;
 };
@@ -119,12 +117,10 @@ Editable.prototype.toggle = function(){
 Editable.prototype.enable = function(){
   this.el.contentEditable = true;
   this.events.bind('keyup');
-  this.events.bind('click', 'onstatechange');
-  this.events.bind('focus', 'onstatechange');
   this.events.bind('keydown');
   this.events.bind('keypress');
   this.events.bind('paste');
-  this.events.bind('cut', 'onpaste');
+  this.events.bind('cut');
   this.events.bind('input', 'onchange');
   this.emit('enable');
   return this;
@@ -236,7 +232,8 @@ Editable.prototype.addToHistory = function(options){
 
 Editable.prototype.execute = function(cmd, val){
   document.execCommand(cmd, false, val);
-  this.onstatechange();
+  this.emit('change');
+  this.emit('execute', cmd, val);
   return this;
 };
 
@@ -255,19 +252,6 @@ Editable.prototype.state = function(cmd){
   if ('undo' == cmd) return 0 < stack.i;
   if ('redo' == cmd) return length > stack.i;
   return document.queryCommandState(cmd);
-};
-
-/**
- * Emit `state`.
- *
- * @param {Event} e
- * @return {Editable}
- * @api private
- */
-
-Editable.prototype.onstatechange = function(e){
-  this.emit('change');
-  return this;
 };
 
 
@@ -334,6 +318,14 @@ Editable.prototype.onchange = function(e){
 };
 
 
+Editable.prototype.oncut = function(e){
+  this.addToHistory();
+  this.emit('save');
+  this.emit('change');
+  this.emit('cut');
+  return this;
+}
+
 /**
  * onpaste, add changes to history.
  * @param  {Event} e 
@@ -344,6 +336,7 @@ Editable.prototype.onpaste = function(e){
   this.addToHistory();
   this.emit('save');
   this.emit('change');
+  this.emit('paste');
   return this;
 };
 
