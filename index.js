@@ -5,6 +5,11 @@ var Emitter = require('emitter');
 var events = require('events');
 var autosave = require('auto-save')(500);
 var position = require('selection-range');
+var selected = require('monitor-text-selection');
+var placeholder = require('editable-placeholder');
+var cursor = require('cursor-move');
+var isKey = require('is-key');
+
 
 module.exports = Editable;
 
@@ -45,6 +50,52 @@ Editable.prototype.contents = function(str){
   return this.el.innerHTML;
 };
 
+
+/**
+ * Add Placeholder to ContentEditable
+ * @param {String} str 
+ */
+
+Editable.prototype.addPlaceholder = function(str){
+  placeholder(this.el, str);
+  return this;
+};
+
+/**
+ * Emit selection and deselection events.
+ * @return {Editable} 
+ */
+
+Editable.prototype.monitorSelections = function(){
+  var select = selected(this.el);
+  var self = this;
+  var currentSelection; 
+  select.on('select', function(sel){
+    currentSelection = sel;
+    self.isSelected = true;
+    self.emit('select', sel);
+  });
+  select.on('deselect', function(){
+    self.isSelected = false;
+    self.emit('deselect', currentSelection);
+  });
+  return this;
+};
+
+/**
+ * Emit cursor-movement events.
+ * @return {Editable} 
+ */
+
+Editable.prototype.monitorCursor = function(){
+  var c = cursor(this.el);
+  var self = this;
+  c.on('change', function(pos){
+    self.emit('cursormove', pos);
+  });
+  return this;
+};
+
 /**
  * Toggle editable state.
  *
@@ -67,11 +118,9 @@ Editable.prototype.toggle = function(){
 
 Editable.prototype.enable = function(){
   this.el.contentEditable = true;
-  this.events.bind('keyup', 'onstatechange');
+  this.events.bind('keyup');
   this.events.bind('click', 'onstatechange');
   this.events.bind('focus', 'onstatechange');
-  this.events.bind('mouseup');
-  this.events.bind('touchend', 'onmouseup');
   this.events.bind('keydown');
   this.events.bind('keypress');
   this.events.bind('paste');
@@ -80,6 +129,7 @@ Editable.prototype.enable = function(){
   this.emit('enable');
   return this;
 };
+
 
 /**
  * Disable editable.
@@ -116,7 +166,7 @@ Editable.prototype.undo = function(){
   this.contents(buf);
   this.restoreCursor(buf);
   this.emit('change');
-  this.emit('state');
+  this.emit('undo', buf);
   return this;
 };
 
@@ -149,7 +199,7 @@ Editable.prototype.redo = function(){
   this.contents(buf);
   this.restoreCursor(buf);
   this.emit('change');
-  this.emit('state');
+  this.emit('redo', buf);
   return this;
 };
 
@@ -170,7 +220,7 @@ Editable.prototype.addToHistory = function(options){
     }
   }
   this.history.add(buf, options);
-  this.emit('add-to-history');
+  this.emit('addtohistory');
   return this;
 };
 
@@ -217,20 +267,21 @@ Editable.prototype.state = function(cmd){
 
 Editable.prototype.onstatechange = function(e){
   this.emit('change');
-  this.emit('state', e);
   return this;
 };
 
+
 /**
- * onmouseup check for a text-selection
- * @return {Editable} 
- * @api private
+ * onkeyup check for creation of new paragraphs
+ * @param  {Event} e 
+ * @return {Editable}   
  */
 
-Editable.prototype.onmouseup = function(){
-  var pos = position(this.el);
-  if (pos && pos.start !== pos.end) {
-    this.emit('selection', pos.start, pos.end);
+Editable.prototype.onkeyup = function(e){
+  if (this.monitorParagraphs){
+    if (isKey(e, ['enter'])){
+      this.emit('newparagraph');
+    } 
   }
   return this;
 };
@@ -244,8 +295,7 @@ Editable.prototype.onmouseup = function(){
  */
 
 Editable.prototype.onkeydown = function(e){
-  var key = e.keyCode || e.charCode;
-  if (key === 8 || key === 46) {
+  if (isKey(e, ['del', 'backspace'])){
     this.onkeypress();
   }
   return this;
